@@ -1,0 +1,102 @@
+name: Verify sha.log
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify-sha-log:
+    name: Verify sha.log matches submodule HEADs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+      - uses: jdx/mise-action@v4
+      - name: Compare sha.log to submodule pointers
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -f sha.log ]]; then
+            echo "::error::sha.log not found at repo root"
+            exit 1
+          fi
+          if [[ ! -f .gitmodules ]]; then
+            echo "::error::.gitmodules not found at repo root"
+            exit 1
+          fi
+
+          # name -> sha, from sha.log (format: "<name>: <sha>")
+          declare -A logged
+          while IFS= read -r line; do
+            [[ -z "${line// }" ]] && continue
+            name="${line%%:*}"
+            sha="${line#*: }"
+            name="${name// }"
+            sha="${sha// }"
+            logged["$name"]="$sha"
+          done < sha.log
+
+          # name -> path, from .gitmodules
+          declare -A submodule_path
+          while IFS= read -r path; do
+            name="$(basename "$path")"
+            submodule_path["$name"]="$path"
+          done < <(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}')
+
+          mismatches=()
+          missing_submodules=()
+          orphan_log_entries=()
+
+          # Check every submodule has a matching sha.log entry with the right SHA
+          for name in "${!submodule_path[@]}"; do
+            path="${submodule_path[$name]}"
+            actual="$(git ls-tree HEAD -- "$path" | awk '{print $3}')"
+            if [[ -z "$actual" ]]; then
+              echo "::error::Could not read submodule pointer for $path"
+              exit 1
+            fi
+            if [[ -z "${logged[$name]+x}" ]]; then
+              missing_submodules+=("$name ($path) — head $actual, no sha.log entry")
+            elif [[ "${logged[$name]}" != "$actual" ]]; then
+              mismatches+=("$name — sha.log: ${logged[$name]} | submodule HEAD: $actual")
+            fi
+          done
+
+          # Check every sha.log entry has a matching submodule
+          for name in "${!logged[@]}"; do
+            if [[ -z "${submodule_path[$name]+x}" ]]; then
+              orphan_log_entries+=("$name — listed in sha.log but no submodule with that name")
+            fi
+          done
+
+          summary="$GITHUB_STEP_SUMMARY"
+          if (( ${#mismatches[@]} == 0 && ${#missing_submodules[@]} == 0 && ${#orphan_log_entries[@]} == 0 )); then
+            echo "### ✅ All submodule SHAs match \`sha.log\`" >> "$summary"
+            exit 0
+          fi
+
+          {
+            echo "### ❌ \`sha.log\` is out of sync with submodule HEADs"
+            echo ""
+            if (( ${#mismatches[@]} > 0 )); then
+              echo "**SHA mismatches:**"
+              for m in "${mismatches[@]}"; do echo "- $m"; done
+              echo ""
+            fi
+            if (( ${#missing_submodules[@]} > 0 )); then
+              echo "**Submodules missing from \`sha.log\`:**"
+              for m in "${missing_submodules[@]}"; do echo "- $m"; done
+              echo ""
+            fi
+            if (( ${#orphan_log_entries[@]} > 0 )); then
+              echo "**\`sha.log\` entries with no matching submodule:**"
+              for m in "${orphan_log_entries[@]}"; do echo "- $m"; done
+              echo ""
+            fi
+            echo "Update \`sha.log\` (or the relevant submodule pointer) so the two agree, then push again."
+          } >> "$summary"
+
+          exit 1

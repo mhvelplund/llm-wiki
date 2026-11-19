@@ -1,0 +1,7 @@
+*.tmp
+.claude/settings.local.json
+.obsidian
+.venv/
+site/
+node_modules/
+.nx/

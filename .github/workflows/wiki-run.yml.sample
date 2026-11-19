@@ -1,0 +1,81 @@
+name: Wiki run (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      prompt:
+        description: "The prompt passed to Claude."
+        type: string
+        required: true
+      rewind-week:
+        description: "Rewind sha.log to each submodule's tip one week ago before running."
+        type: boolean
+        required: false
+        default: false
+      max-budget-usd:
+        description: "Max USD budget for the Claude run. Leave blank to run uncapped."
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-wiki # Don't run multiple wiki updates at the same time
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.WIKI_APP_ID }}
+          private-key: ${{ secrets.WIKI_APP_PRIVATE_KEY }}
+          owner: <GITHUB_OWNER> # your GitHub user or org
+          # One line per repo the GitHub App needs access to: this wiki repo, plus each submodule under sources/.
+          repositories: |
+            <WIKI_REPO_NAME>
+            <SOURCE_REPO_NAME>
+      - name: Checkout main with submodules
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Advance submodules to remote tips
+        run: git submodule update --init --remote --recursive
+      - uses: jdx/mise-action@v4
+      - name: Cache Claude Code CLI
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm-global
+          key: claude-code-${{ runner.os }}-v1
+      - name: Install Claude Code CLI
+        shell: bash
+        run: scripts/install_claude_code_cli.sh
+
+      - name: Rewind sha.log one week (weekly full pickup)
+        if: ${{ inputs.rewind-week }}
+        shell: bash
+        run: scripts/rewind_sha_log.sh
+
+      - name: Run Claude wiki run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROMPT: ${{ inputs.prompt }}
+          MAX_BUDGET_USD: ${{ inputs.max-budget-usd }}
+        shell: bash
+        run: scripts/run_claude_wiki_run.sh
+
+      - name: Commit and push wiki changes
+        shell: bash
+        env:
+          # GH_PAT: ${{ secrets.GH_PAT }} # should be GH_TOKEN?
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: scripts/commit_and_push_wiki_changes.sh

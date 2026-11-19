@@ -1,0 +1,8 @@
+[tools]
+node = "24.14.0"
+"npm:pnpm" = "11.5.1"
+"npm:nx" = "22.7.1"
+"npm:zx" = "8.8.5"
+
+[shell_alias]
+resha = "(for f in {{config_root}}/sources/*; do echo \"${f##*/}: $(cd $f; git rev-parse HEAD)\"; done) >{{config_root}}/sha.log"

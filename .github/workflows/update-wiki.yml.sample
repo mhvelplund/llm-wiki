@@ -1,0 +1,23 @@
+name: Update wiki
+
+on:
+  schedule:
+    - cron: "0 21 * * 7" # 21:00 UTC every Sunday
+  workflow_dispatch:
+    inputs:
+      max-budget-usd:
+        description: "Max USD budget for the Claude run. Leave blank to use default budget $5.00."
+        type: string
+        required: false
+        default: ""
+
+jobs:
+  update-wiki:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/wiki-run.yml
+    secrets: inherit
+    with:
+      prompt: "Update the wiki and lint it."
+      rewind-week: true
+      max-budget-usd: ${{ inputs.max-budget-usd || '5.00' }}
