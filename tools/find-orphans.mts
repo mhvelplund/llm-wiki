@@ -1,11 +1,11 @@
 #!/usr/bin/env -S node --experimental-strip-types
-import { glob, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { listWikiPages, WIKI_DIR, wikiPath } from "./wiki-pages.mts";
 
 const root = resolve(fileURLToPath(import.meta.url), "../..");
-const pages: string[] = [];
-for await (const p of glob("wiki/**/*.md", { cwd: root })) pages.push(p);
+const pages = await listWikiPages(root);
 
 const links: Record<string, string[]> = {};
 for (const p of pages) {
@@ -18,7 +18,7 @@ for (const [src, dests] of Object.entries(links)) {
   const srcDir = dirname(resolve(root, src));
   for (const d of dests) {
     try {
-      referenced.add(relative(root, resolve(srcDir, d.split("#")[0])));
+      referenced.add(relative(root, resolve(srcDir, d.split("#")[0])).replaceAll("\\", "/"));
     } catch {
       // ignore unresolvable paths
     }
@@ -26,7 +26,7 @@ for (const [src, dests] of Object.entries(links)) {
 }
 
 const orphans = pages
-  .filter((p) => !p.includes("wiki/img/") && p !== "wiki/index.md" && !referenced.has(p))
+  .filter((p) => !p.startsWith(wikiPath(WIKI_DIR, "img/")) && p !== wikiPath(WIKI_DIR, "index.md") && !referenced.has(p))
   .sort();
 
 console.log("=== ORPHAN PAGES (no inbound links) ===");

@@ -1,11 +1,12 @@
 #!/usr/bin/env -S node --experimental-strip-types
 /** Sort `## Related pages` bullet blocks alphabetically in every wiki page. */
-import { glob, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { listWikiPages, WIKI_DIR } from "./wiki-pages.mts";
 
 const root = resolve(fileURLToPath(import.meta.url), "../..");
-const wiki = resolve(root, "wiki");
+const wiki = resolve(root, WIKI_DIR);
 
 const HEADER_RE = /^## Related pages\s*$/;
 const BULLET_RE = /^\s*-\s+/;
@@ -39,8 +40,7 @@ function sortBlock(lines: string[]): [string[], boolean] {
 }
 
 let total = 0;
-const pages: string[] = [];
-for await (const p of glob("wiki/**/*.md", { cwd: root })) pages.push(p);
+const pages = await listWikiPages(root);
 
 for (const rel of pages.sort()) {
   const p = resolve(root, rel);

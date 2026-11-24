@@ -81,18 +81,20 @@ contain:
   - `wiki/<name>/index.md` — section overview, links every subfolder index.
   - `wiki/<name>/architecture/index.md`, `overview.md`, `folder-layout.md`, `technology-stack.md`.
   - Plus subfolders for the repo's major components (e.g. `packages/`, `apps/`, `components/`, `concepts/`,
-    `operations/` — whatever fits), at most ~8 pages per folder. Look at an existing section such as `wiki/spyo-map/`
-    for the expected shape and depth. Decide the tree before writing pages.
+    `operations/` — whatever fits), at most ~8 pages per folder. If `sha.log` lists other sources, look at one of
+    their `wiki/<other>/` sections for the expected shape and depth. Decide the tree before writing pages.
 - No-touch list: anything under `sources/`, any other `wiki/<section>/`, `wiki/index.md`, `sha.log`.
 - Return value: the list of files created, each with a one-line description.
 
 ### 5. Cross-link — one linker subagent, only if other sections exist
 
-Skip this step if `wiki/<name>/` is the only section folder under `wiki/`.
+Skip this step if `sha.log` has no entries other than the new one.
 
 Otherwise dispatch one `general-purpose` subagent with:
 
-- The file list returned in step 4, and the list of all other wiki pages (`find wiki -name '*.md'`).
+- The file list returned in step 4, and the list of all other wiki pages
+  (`node --experimental-strip-types tools/wiki-pages.mts` — never `find` over the wiki folder, which may be the repo
+  root).
 - Task: where a new page and an existing page genuinely share a concept (same library, protocol, pattern, data format,
   shared dependency…), add a relative Markdown link in the prose of both and a bullet in both *Related pages* sections
   (kept alphabetical). No link where no real relationship exists — zero links is a valid outcome.
@@ -109,7 +111,7 @@ Read the current `wiki/index.md` first (if any), then rewrite it in the CLAUDE.m
   `<web>/commit/<sha>` for that source.
 - **Last updated**: today, plus the commit link of the newly added source.
 - `---`, then the existing intro prose (keep it; don't invent new text).
-- `## Sections`: one bullet per `wiki/*/index.md`, sorted alphabetically, `[<n>](<n>/index.md) — <one line>`, where the
+- `## Sections`: one bullet per `wiki/<n>/index.md` for each `<n>` in `sha.log`, sorted alphabetically, `[<n>](<n>/index.md) — <one line>`, where the
   line comes from that section index's **Summary**.
 - `## Related pages`: the same section links, alphabetical.
 
@@ -124,7 +126,7 @@ Run each and fix anything that fails:
 - `git submodule status sources/<name>` shows the submodule; `.gitmodules` has its entry.
 - Every folder in `sources/` has a `sha.log` line.
 - `wiki/<name>/index.md` and the four `architecture/` pages exist.
-- Every folder under `wiki/` except `wiki/img/` has an `index.md`.
+- Every folder under `wiki/<name>/` (including itself) has an `index.md`.
 - Every relative `.md` link in `wiki/<name>/`, in pages the linker edited, and in `wiki/index.md` resolves to a file on
   disk (resolve each target relative to the page containing it).
 - No `[[wiki-links]]` syntax in `wiki/<name>/`.
@@ -140,6 +142,6 @@ yet.
 | Deep-links built from the SSH URL (`git@github.com:…/blob/…`) | Always use `web` (`https://<host>/<org>/<repo>`)      |
 | `[[wiki-links]]` in pages                                     | Relative Markdown links                               |
 | Subfolder without `index.md`                                  | Every wiki folder gets one                            |
-| Rebuilding `wiki/index.md` from memory and dropping a section | Build the section list from `wiki/*/index.md` on disk |
+| Rebuilding `wiki/index.md` from memory and dropping a section | Build the section list from `sha.log` + `wiki/<n>/index.md` |
 | Rewriting `sha.log` and losing existing lines                 | Append only                                           |
 | Committing the result                                         | Leave it uncommitted for the user                     |
