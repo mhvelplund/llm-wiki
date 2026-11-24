@@ -18,6 +18,19 @@ code in `sources/*`. You should consider it read-only.
 You can also open the `wiki` folder in [Obsidian](https://obsidian.md/) to get a more traditional wiki experience, with
 backlinks and graph view. Just make sure to set the vault to the `wiki` folder.
 
+### Using the repo root as the vault
+
+If you'd rather open the whole repo as your Obsidian vault, move the wiki to the repo root and hide the sources:
+
+```plaintext
+/set-layout . .sources
+```
+
+The `set-layout` skill moves the wiki pages to the root and the submodules to `.sources/` with `git mv`, moves
+`CLAUDE.md` to `.claude/CLAUDE.md` (Obsidian ignores dot-folders), and rewrites every path in the skills, scripts and
+tools. Then open the repo root as the vault. `/set-layout wiki sources` restores the default layout. Like the other
+skills, it commits nothing.
+
 ## Managing sources
 
 Sources are added and removed with two Claude Code skills, run from the root of the repo. Neither skill commits
