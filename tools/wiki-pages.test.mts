@@ -48,3 +48,13 @@ test("wikiPath", () => {
   assert.equal(wikiPath(".", "index.md"), "index.md");
   assert.equal(wikiPath("wiki", "img/"), "wiki/img/");
 });
+
+test("nested wiki under a machinery-named folder still lists pages", async () => {
+  const dir = await fixture(["docs/wiki/index.md", "docs/wiki/demo/a.md", "docs/other.md"]);
+  assert.deepEqual(await listWikiPages(dir, "docs/wiki", "sources"), ["docs/wiki/demo/a.md", "docs/wiki/index.md"]);
+});
+
+test("root wiki skips a visible sources folder and tooling folders", async () => {
+  const dir = await fixture(["index.md", "sources/x/README.md", "tools/t.md", "scripts/s.md", ".obsidian/o.md"]);
+  assert.deepEqual(await listWikiPages(dir, ".", "sources"), ["index.md"]);
+});

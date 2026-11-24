@@ -51,7 +51,10 @@ stay out of the vault) and ask once whether to use it.
 ### 3. Move the content — `git mv` only
 
 ```bash
-# Sources, one per sha.log name (git mv also updates .gitmodules `path` and the submodule's worktree setting):
+# Sources: every submodule whose .gitmodules path is under <oldSrc> — not only sha.log names, since a submodule can be
+# checked out before it has a sha.log line. List them with:
+#   git config -f .gitmodules --get-regexp '\.path$' | awk '{print $2}' | grep '^<oldSrc>/'
+# git mv also updates .gitmodules `path` and the submodule's worktree setting.
 mkdir -p <newSrc> && git mv <oldSrc>/<n> <newSrc>/<n>
 # Wiki, one per item from step 2.4 — never `git mv wiki .` or `git mv . wiki`:
 mkdir -p <newWiki> && git mv <oldWiki>/<item> <newWiki>/<item>
@@ -74,9 +77,18 @@ skill's own folder (its examples name both layouts):
 
 ```bash
 x=(':!<newSrc>' ':!docs/superpowers' ':!tools/*.test.mts' ':!.claude/skills/set-layout' ':!.gitmodules')
+# Exclude the moved wiki pages too: add ':!<newWiki>' when newWiki isn't ., otherwise one ':!<item>' per wiki item
+# from step 2.4 (e.g. ':!index.md' ':!<name>').
 git grep -nE '(^|[^A-Za-z0-9._-])<oldSrc>(/|`|")' -- . "${x[@]}"
 git grep -nE '(^|[^A-Za-z0-9._-])<oldWiki>(/|`|")' -- . "${x[@]}"   # when oldWiki isn't .
+# When oldWiki is . — find the ./x paths the forward move wrote, and the root phrasing:
+git grep -nE '(^|[^A-Za-z0-9._/-])\./[A-Za-z<]' -- . "${x[@]}"       # ignore relative imports and ./.github paths
+git grep -n 'repo root' -- . "${x[@]}"
 ```
+
+Wiki pages are handled separately: in the pages listed in step 2.4, rewrite only labels that name a source path — the
+`` `<oldSrc>/<n>` `` labels in `index.md`'s **Sources** list (written by `add-source`) — to `` `<newSrc>/<n>` ``.
+Leave all other page content alone.
 
 Also leave the README's *Using the repo root as the vault* subsection alone: it describes both layouts on purpose.
 
@@ -88,8 +100,8 @@ Rewrite each hit by judgement: change paths, never prose words ("LLM Wiki", "wik
   and `./<oldWiki>/x` becomes `./x`. A Markdown link target never needs the `./`: `(wiki/x)` → `(x)`.
 - Old wiki at the root: `./x` paths that point into the wiki → `<newWiki>/x` (`./x` in a README link → `./<newWiki>/x`).
   Also look for wiki paths written without a prefix: `index.md`, `img/`, `<name>/` placeholders and sentences such as
-  "the wiki folder (the repo root)". Read `CLAUDE.md` and the three skills (`add-source`, `remove-source`, this one)
-  from top to bottom instead of relying on grep alone.
+  "the wiki folder (the repo root)". Read `CLAUDE.md`, the `add-source` and `remove-source` skills, `README.md` and
+  `scripts/*.sh` from top to bottom instead of relying on grep alone (not this skill — its examples stay as they are).
 - Folder-name sentences such as "open the `wiki` folder" become "open the repo root" (and back).
 - `tools/wiki-pages.mts`: set `WIKI_DIR` and `SOURCES_DIR` to the new values (`"."` for the root).
 - Keep the alignment of the folder tree block in `CLAUDE.md`.

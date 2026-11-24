@@ -22,9 +22,10 @@ These are the default locations. The wiki folder may be the repo root (an Obsidi
 records the current layout. To list every wiki page, run `node --experimental-strip-types tools/wiki-pages.mts` rather
 than searching the wiki folder, which may also hold the repo's tooling.
 
-Every wiki folder should have an "index.md" file as a landing page for that folder. The only exception is `wiki/img/`
-which is an assets-only folder and intentionally has no index.md. When creating a new sub-folder under `wiki/`, always
-create its `index.md` at the same time.
+Every folder that holds wiki pages (the wiki folder itself and each section folder below it) should have an "index.md"
+file as a landing page for that folder. The only exception is `wiki/img/` which is an assets-only folder and
+intentionally has no index.md. When creating a new sub-folder for wiki pages, always create its `index.md` at the same
+time. Folders that hold no wiki pages (tooling, `.claude/`, the sources) are not part of the wiki.
 
 ## Source code
 
@@ -98,7 +99,8 @@ directories. `<org>/<repo>` comes from the submodule's GitHub remote (see Source
 When the user asks a question:
 
 1. Read `wiki/index.md` first to find relevant pages
-2. Only read from `wiki/`. If that gives no results, read from `sources/`. Don't read from other folders.
+2. Only read wiki pages (listed by `node --experimental-strip-types tools/wiki-pages.mts`). If that gives no results,
+   read from `sources/`. Don't read anything else.
 3. Read those pages and synthesize an answer
 4. Cite specific wiki pages in your response
 5. If the answer is not in the wiki, say so clearly
@@ -136,5 +138,5 @@ SHA's in this case.
 - Keep page names lowercase with hyphens (e.g. `machine-learning.md`)
 - Write in clear, plain language
 - When uncertain about how to categorize something, ask the user
-- Change the folder layout only with the `set-layout` skill (`/set-layout <wikiDir> <sourcesDir>`); never move
-  `sources/` or `wiki/` by hand
+- Change the folder layout only with the `set-layout` skill (`/set-layout <wikiDir> <sourcesDir>`); never move the
+  wiki pages or the source submodules by hand

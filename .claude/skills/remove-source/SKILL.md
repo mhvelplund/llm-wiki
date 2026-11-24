@@ -42,8 +42,12 @@ Change nothing, run nothing else, don't offer alternatives.
 # a. Find the submodule's own git dir BEFORE deinit (deinit empties the folder). It is under .git/modules/
 #    normally, under .git/worktrees/<wt>/modules/ in a worktree, and absent if the submodule was never initialised.
 moddir=$(git -C sources/<name> rev-parse --absolute-git-dir 2>/dev/null)
-#    After /set-layout moves a submodule, its git dir keeps the old path, so accept any */modules/* dir.
-case "$moddir" in */modules/*) ;; *) moddir= ;; esac   # never the superproject's own .git
+#    After /set-layout moves a submodule, its git dir keeps the old path, so accept any dir under the superproject's
+#    own modules/ folder. An uninitialised submodule makes rev-parse fall back to the superproject's .git — which may
+#    itself live under some ".../modules/..." path — so anchor the match and never accept the superproject's git dir.
+sup=$(git rev-parse --absolute-git-dir)
+case "$moddir" in "$sup"/modules/*) ;; *) moddir= ;; esac
+[ "$moddir" = "$sup" ] && moddir=
 
 # b. Deinit — skip if `git submodule status sources/<name>` starts with "-" (not initialised).
 git submodule deinit -f sources/<name>
@@ -51,8 +55,10 @@ git submodule deinit -f sources/<name>
 # c. Drop the gitlink and the .gitmodules section. Not `git rm`: it refuses when .gitmodules has other
 #    unstaged changes.
 git update-index --force-remove sources/<name>
-git config -f .gitmodules --remove-section "$section"   # section found in step 1
-git config --remove-section "$section" 2>/dev/null      # local .git/config entry, left if (b) was skipped
+if [ -n "$section" ]; then                                # section found in step 1; skip both if empty
+  git config -f .gitmodules --remove-section "$section"
+  git config --remove-section "$section" 2>/dev/null      # local .git/config entry, left if (b) was skipped
+fi
 rm -rf sources/<name>
 
 # d. Delete the module git dir found in (a), so re-adding the repo later works.
