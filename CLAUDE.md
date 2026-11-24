@@ -9,12 +9,18 @@ out under `sources/`. Claude maintains the wiki. The human curates sources, asks
 
 ## Folder structure
 
+<!-- layout: wikiDir=wiki sourcesDir=sources -->
+
 ```text
 sources/      -- Git repositories checked out as submodules (immutable -- never modify these)
 wiki/         -- markdown pages maintained by Claude
 wiki/index.md -- table of contents for the entire wiki
 sha.log       -- source of truth for which repos are tracked, and the last Git SHA scanned for each
 ```
+
+These are the default locations. The wiki folder may be the repo root (an Obsidian vault); the `layout` marker above
+records the current layout. To list every wiki page, run `node --experimental-strip-types tools/wiki-pages.mts` rather
+than searching the wiki folder, which may also hold the repo's tooling.
 
 Every wiki folder should have an "index.md" file as a landing page for that folder. The only exception is `wiki/img/`
 which is an assets-only folder and intentionally has no index.md. When creating a new sub-folder under `wiki/`, always
@@ -130,3 +136,5 @@ SHA's in this case.
 - Keep page names lowercase with hyphens (e.g. `machine-learning.md`)
 - Write in clear, plain language
 - When uncertain about how to categorize something, ask the user
+- Change the folder layout only with the `set-layout` skill (`/set-layout <wikiDir> <sourcesDir>`); never move
+  `sources/` or `wiki/` by hand
