@@ -73,7 +73,7 @@ Search the tracked files for path-like uses of the old folder names. Exclude the
 skill's own folder (its examples name both layouts):
 
 ```bash
-x=(':!<newSrc>' ':!docs/superpowers' ':!tools/*.test.mts' ':!.claude/skills/set-layout')
+x=(':!<newSrc>' ':!docs/superpowers' ':!tools/*.test.mts' ':!.claude/skills/set-layout' ':!.gitmodules')
 git grep -nE '(^|[^A-Za-z0-9._-])<oldSrc>(/|`|")' -- . "${x[@]}"
 git grep -nE '(^|[^A-Za-z0-9._-])<oldWiki>(/|`|")' -- . "${x[@]}"   # when oldWiki isn't .
 ```

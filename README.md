@@ -76,8 +76,8 @@ Run `/remove-source` with the source's folder name under `sources/`:
 
 This removes the `sources/stl-browser` submodule, its `.gitmodules` entry and its `sha.log` line, and deletes the
 `wiki/stl-browser/` section. Pages in other sections that linked to it are rewritten so they don't leave broken links,
-and `wiki/index.md` is regenerated. If it was the last source, everything inside `wiki/` is deleted. If no source has
-that name, the skill does nothing.
+and `wiki/index.md` is regenerated. If it was the last source, `wiki/index.md` (and `wiki/img/`) goes too; nothing
+else in the wiki folder is touched. If no source has that name, the skill does nothing.
 
 ## Updates
 
